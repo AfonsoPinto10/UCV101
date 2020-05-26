@@ -9,9 +9,13 @@ from keras.optimizers import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
     
+def dice_loss(y_true, y_pred):
+  numerator = 2 * tf.reduce_sum(y_true * y_pred, axis=-1)
+  denominator = tf.reduce_sum(y_true + y_pred, axis=-1)
+  return 1 - (numerator + 1) / (denominator + 1)
 
 def unet(pw = None, img_s = (256,256,1)):
- 
+    
     inputs = Input(img_s)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
@@ -64,7 +68,7 @@ def unet(pw = None, img_s = (256,256,1)):
 
     return model
 
-def vnet(pw = None, img_s =(138,128,3)): #=add size pls#
+def vnet(pw = None, img_s =(128,128,3)): #=add size pls#
     #layer 1 down
     inputs = Input(img_s)
     conv1 = PReLU(Conv3D(16, 5, strides=1, padding = 'same', kernel_initializer = 'he_normal')(inputs))
@@ -140,7 +144,7 @@ def vnet(pw = None, img_s =(138,128,3)): #=add size pls#
     #Com+ile. Ainda falta colocar a função de loss indicada
     model = Model(inputs = inputs, outputs = sftm)
 
-    model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
+    model.compile(optimizer = Adam(lr = 1e-4), loss = dice_loss, metrics = ['accuracy'])
     
     #model.summary()
 
