@@ -6,8 +6,62 @@ import numpy as np
 from keras.models import *
 from keras.layers import *
 from keras.optimizers import *
+from keras.preprocessing.image import *
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
+
+def importer(bs):
+    data_gen_args = dict(rotation_range=10,
+                         width_shift_range=0.1,
+                         height_shift_range=0.1,
+                         vertical_flip=True,
+                         horizontal_flip=True,
+                         rescale=1./(2^16))
+    data_gen_args2 = dict(rotation_range=10,
+                         width_shift_range=0.1,
+                         height_shift_range=0.1,
+                         vertical_flip=True,
+                         horizontal_flip=True)
+    
+    image_datagen = ImageDataGenerator(**data_gen_args)
+    mask_datagen = ImageDataGenerator(**data_gen_args2)
+    # Provide the same seed and keyword arguments to the fit and flow methods
+    seed = 1
+    image_generator = image_datagen.flow_from_directory('/volumes',
+                                                        color_mode="grayscale",
+                                                        class_mode=None,
+                                                        batch_size=bs,
+                                                        seed=seed)
+    mask_generator = mask_datagen.flow_from_directory('/masks',
+                                                      color_mode="grayscale",
+                                                      class_mode=None,
+                                                      batch_size=bs,
+                                                      seed=seed)
+    # combine generators into one which yields image and masks
+    train_generator = zip(image_generator, mask_generator)
+    return train_generator
+
+def validator(bs):
+    data_gen_args = dict(rescale=1./(2^16))
+    data_gen_args2 = dict(rescale=1)
+    
+    image_datagen = ImageDataGenerator(**data_gen_args)
+    mask_datagen = ImageDataGenerator(**data_gen_args2)
+    # Provide the same seed and keyword arguments to the fit and flow methods
+    seed = 1
+    image_generator = image_datagen.flow_from_directory('/val_volumes',
+                                                        color_mode="grayscale",
+                                                        class_mode=None,
+                                                        batch_size=bs,
+                                                        seed=seed)
+    mask_generator = mask_datagen.flow_from_directory('/val_masks',
+                                                      color_mode="grayscale",
+                                                      class_mode=None,
+                                                      batch_size=bs,
+                                                      seed=seed)
+    # combine generators into one which yields image and masks
+    train_generator = zip(image_generator, mask_generator)
+    return val_generator
     
 def dice_loss(y_true, y_pred):
   numerator = 2 * tf.reduce_sum(y_true * y_pred, axis=-1)
